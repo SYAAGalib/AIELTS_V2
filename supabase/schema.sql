@@ -1,0 +1,34 @@
+-- ============================================================
+-- AIELTS — Portable schema bundle
+-- ============================================================
+-- This single file rebuilds the full AIELTS database on any fresh
+-- Supabase / Postgres project. Run after a clean `supabase db reset`
+-- (or against a new self-hosted Postgres with the Supabase auth +
+-- storage extensions installed). Order is intentional:
+--   1. Enums + helper function set_updated_at
+--   2. Profiles + user_roles + has_role/is_admin + signup trigger
+--   3. Subscriptions / billing
+--   4. Catalog (modules, questions, mock_tests…)
+--   5. User activity tables (attempts, vocab, writing, speaking…)
+--   6. Notifications / videos / study_plans / admin tables
+--   7. updated_at triggers
+--   8. RLS policies (per-table + bulk via DO blocks)
+--   9. Storage buckets + storage.objects policies
+--   10. Hardening: search_path + execute revokes
+--
+-- The Lovable-managed `supabase/migrations/*.sql` files are the
+-- source of truth for the hosted project. This file is a one-shot
+-- consolidated copy you can apply when migrating to a self-hosted
+-- Supabase. Keep them in sync if you change the schema.
+-- ============================================================
+
+-- Run all migrations in supabase/migrations/ in lexical order to
+-- recreate the same schema. The simplest portable path is:
+--
+--   for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done
+--
+-- If you'd prefer a single concatenated file, run:
+--   cat supabase/migrations/*.sql > schema-flat.sql
+--
+-- and apply that. Doing so is equivalent to applying every migration
+-- the Lovable Cloud project has applied, in the same order.

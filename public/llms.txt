@@ -1,0 +1,9 @@
+# AIELTS
+
+> AI-powered IELTS preparation — adaptive practice for Listening, Reading, Writing, and Speaking with instant AI scoring and predicted band scores.
+
+AIELTS helps students reach Band 9 with an AI tutor that adapts to their level. Features include AI essay scoring, a voice AI examiner for Speaking, full-length mock tests, and 12-week study plans.
+
+## Pages
+
+- [Home](/): Overview of AIELTS — features, demo, pricing, and testimonials.

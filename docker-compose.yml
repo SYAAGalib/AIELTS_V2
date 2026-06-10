@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aielts:latest
+    container_name: aielts
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+
+      # Supabase
+      SUPABASE_URL: "https://lngrdjskqafdvyhotuth.supabase.co"
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_YRt3hvQmDZGdfCKjgy4c3g_xQb59aBH"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuZ3JkanNrcWFmZHZ5aG90dXRoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDk4MDI2MCwiZXhwIjoyMDk2NTU2MjYwfQ.UuLbaNVpCbk8MN0f18MyGRUzOyQaTF02kghv-l_ruyo"
+
+      # Vite client-side (already baked in at build time; kept here for reference)
+      VITE_SUPABASE_URL: "https://lngrdjskqafdvyhotuth.supabase.co"
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_YRt3hvQmDZGdfCKjgy4c3g_xQb59aBH"
+      VITE_SUPABASE_PROJECT_ID: "lngrdjskqafdvyhotuth"
+
+      # Admin demo credentials
+      ADMIN_DEMO_EMAIL: "admin@gmail.com"
+      ADMIN_DEMO_PASSWORD: "admin123"
+      ADMIN_DEMO_NAME: "Galib"
+      VITE_ADMIN_DEMO_EMAIL: "admin@gmail.com"
+      VITE_ADMIN_DEMO_PASSWORD: "admin123"
+      VITE_ADMIN_DEMO_NAME: "Galib"
+
+      # Session / entitlement
+      ADMIN_SESSION_SECRET: "aielts-local-admin-session-secret-2026-06-09"
+
+      # Optional — fill in to enable YouTube sync and Lovable email
+      YOUTUBE_API_KEY: ""
+      LOVABLE_API_KEY: ""
+      LOVABLE_SEND_URL: ""

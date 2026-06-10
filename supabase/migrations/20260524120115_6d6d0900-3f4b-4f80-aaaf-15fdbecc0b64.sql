@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bg_animations boolean NOT NULL DEFAULT true;
