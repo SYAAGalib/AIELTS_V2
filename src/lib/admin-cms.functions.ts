@@ -218,6 +218,26 @@ export const adminDeleteQuestion = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const adminCreateMediaUploadUrl = createServerFn({ method: "POST" })
+  .middleware([requireAdminSession])
+  .inputValidator((i) =>
+    z.object({
+      filename: z.string().min(1).max(200),
+      kind: z.enum(["audio", "image"]),
+    }).parse(i)
+  )
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    const ext = (data.filename.split(".").pop() ?? "bin").toLowerCase().slice(0, 8);
+    const path = `${data.kind}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { data: signData, error } = await sb.storage
+      .from("question-media")
+      .createSignedUploadUrl(path);
+    if (error) throw new Error(error.message);
+    const { data: { publicUrl } } = sb.storage.from("question-media").getPublicUrl(path);
+    return { signedUrl: signData.signedUrl, path, publicUrl };
+  });
+
 // =============================================================================
 // VOCABULARY
 // =============================================================================

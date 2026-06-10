@@ -1,19 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ElementType, type ReactNode } from "react";
+import { useState, useRef, type ElementType, type ReactNode, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Save, Eye, Upload, Image as ImageIcon, Music,
   ChevronDown, HelpCircle, BookOpen, Headphones, PenLine, Mic, Layers, X,
+  List, Loader2,
 } from "lucide-react";
 import {
   adminListModules,
   adminListModuleQuestions,
+  adminListQuestions,
   adminAddQuestionToModule,
   adminUpsertQuestion,
   adminDeleteQuestion,
+  adminCreateMediaUploadUrl,
   type ModuleQuestion,
   type Question,
 } from "@/lib/admin-cms.functions";
@@ -106,7 +109,7 @@ type QuestionDraft = {
   explanation: string;
   difficulty: number;
   status: "draft" | "published" | "archived";
-  media?: { kind: "audio" | "image"; name: string };
+  media?: { kind: "audio" | "image"; name: string; url?: string };
 };
 
 function emptyDraft(skill: Skill): QuestionDraft {
@@ -121,7 +124,26 @@ function emptyDraft(skill: Skill): QuestionDraft {
     answer: "",
     explanation: "",
     difficulty: 3,
-    status: "draft",
+    status: "published",
+  };
+}
+
+function qToDraft(q: Question): QuestionDraft {
+  const skill = q.skill as Skill;
+  const label = SKILL_LABEL[skill];
+  return {
+    id: q.id,
+    skill,
+    type: q.type || Q_TYPES[label][0],
+    part: (q.body?.part as string) || PARTS[label]?.[0] || "",
+    prompt: q.prompt || "",
+    options: (q.body?.options as string[]) || [],
+    bulletPoints: (q.body?.bulletPoints as string[]) || [],
+    answer: (q.answer_key?.answer as string) || "",
+    explanation: (q.answer_key?.explanation as string) || "",
+    difficulty: q.difficulty || 3,
+    status: q.status || "draft",
+    media: q.body?.media as QuestionDraft["media"] | undefined,
   };
 }
 
@@ -150,6 +172,7 @@ function mqToDraft(mq: ModuleQuestion & { question: Question }): QuestionDraft {
 function QuestionsPage() {
   const listModules = useServerFn(adminListModules);
   const listMQ = useServerFn(adminListModuleQuestions);
+  const listAll = useServerFn(adminListQuestions);
   const upsert = useServerFn(adminUpsertQuestion);
   const delQuestion = useServerFn(adminDeleteQuestion);
   const addToModule = useServerFn(adminAddQuestionToModule);
@@ -160,10 +183,16 @@ function QuestionsPage() {
     queryFn: () => listModules(),
   });
 
+  const { data: allQuestions = [], isLoading: loadingAll } = useQuery({
+    queryKey: ["admin-questions"],
+    queryFn: () => listAll(),
+  });
+
   const [selId, setSelId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestionDraft | null>(null);
   const [previewing, setPreviewing] = useState<QuestionDraft | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const effectiveId = selId || modules[0]?.id || null;
   const module = modules.find((m) => m.id === effectiveId) ?? null;
@@ -221,6 +250,7 @@ function QuestionsPage() {
       toast.success(d.id ? "Question updated" : "Question added to module");
       setDraft(null);
       qc.invalidateQueries({ queryKey: ["module-questions", module.id] });
+      qc.invalidateQueries({ queryKey: ["admin-questions"] });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -235,6 +265,7 @@ function QuestionsPage() {
       toast.success("Question deleted");
       if (draft?.id === questionId) setDraft(null);
       qc.invalidateQueries({ queryKey: ["module-questions", effectiveId] });
+      qc.invalidateQueries({ queryKey: ["admin-questions"] });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to delete");
     }
@@ -315,67 +346,144 @@ function QuestionsPage() {
             </motion.div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur">
-              <p className="px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/40">
-                Set ({moduleQuestions.length})
-              </p>
-              {loadingMQ ? (
-                <p className="p-3 text-xs text-white/40">Loading…</p>
-              ) : moduleQuestions.length === 0 ? (
-                <p className="p-3 text-xs text-white/40">
-                  No questions yet — click "Add question".
-                </p>
+              {/* Tab toggle: Module set vs All questions */}
+              <div className="mb-2 flex gap-1 rounded-lg bg-white/5 p-1">
+                <button
+                  onClick={() => setShowAll(false)}
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-md py-1 text-[10px] uppercase tracking-wider transition ${
+                    !showAll ? "bg-[var(--teal)]/20 text-[var(--teal)]" : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <Layers className="h-3 w-3" /> Module ({moduleQuestions.length})
+                </button>
+                <button
+                  onClick={() => setShowAll(true)}
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-md py-1 text-[10px] uppercase tracking-wider transition ${
+                    showAll ? "bg-[var(--teal)]/20 text-[var(--teal)]" : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <List className="h-3 w-3" /> All ({allQuestions.length})
+                </button>
+              </div>
+
+              {showAll ? (
+                // ── All questions view ──────────────────────────────
+                loadingAll ? (
+                  <p className="p-3 text-xs text-white/40">Loading…</p>
+                ) : allQuestions.length === 0 ? (
+                  <p className="p-3 text-xs text-white/40">No questions in the bank yet.</p>
+                ) : (
+                  <ul className="max-h-[520px] space-y-1 overflow-y-auto">
+                    <AnimatePresence>
+                      {allQuestions.map((q) => {
+                        const isEditing = draft?.id === q.id;
+                        return (
+                          <motion.li
+                            key={q.id}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 8 }}
+                            className={`group flex items-start gap-2 rounded-lg p-2 transition-colors ${
+                              isEditing ? "bg-[var(--teal)]/10" : "hover:bg-white/5"
+                            }`}
+                          >
+                            <span className={`mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold capitalize ${
+                              q.status === "published" ? "bg-green-400/15 text-green-400" : "bg-white/10 text-white/40"
+                            }`}>
+                              {q.skill[0].toUpperCase()}
+                            </span>
+                            <div
+                              className="min-w-0 flex-1 cursor-pointer"
+                              onClick={() => setDraft(qToDraft(q))}
+                            >
+                              <p className="truncate text-xs font-medium">
+                                {q.prompt || <span className="text-white/40">Untitled</span>}
+                              </p>
+                              <p className="truncate text-[10px] text-white/40">
+                                {q.type}{q.body?.part ? ` · ${q.body.part}` : ""} · {q.status}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setPreviewing(qToDraft(q))}
+                              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                              title="Preview"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-white/60 hover:text-[var(--teal)]" />
+                            </button>
+                            <button
+                              onClick={() => remove(q.id)}
+                              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-rose-300" />
+                            </button>
+                          </motion.li>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </ul>
+                )
               ) : (
-                <ul className="space-y-1">
-                  <AnimatePresence>
-                    {(moduleQuestions as (ModuleQuestion & { question: Question })[]).map((mq, i) => {
-                      const q = mq.question;
-                      const isEditing = draft?.id === q?.id;
-                      return (
-                        <motion.li
-                          key={mq.id}
-                          initial={{ opacity: 0, x: -8 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 8 }}
-                          className={`group flex items-start gap-2 rounded-lg p-2 transition-colors ${
-                            isEditing ? "bg-[var(--teal)]/10" : "hover:bg-white/5"
-                          }`}
-                        >
-                          <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--teal)]/15 text-[10px] font-bold text-[var(--teal)]">
-                            {i + 1}
-                          </span>
-                          <div
-                            className="min-w-0 flex-1 cursor-pointer"
-                            onClick={() => setDraft(mqToDraft(mq))}
+                // ── Module questions view ───────────────────────────
+                loadingMQ ? (
+                  <p className="p-3 text-xs text-white/40">Loading…</p>
+                ) : moduleQuestions.length === 0 ? (
+                  <p className="p-3 text-xs text-white/40">
+                    No questions yet — click "Add question".
+                  </p>
+                ) : (
+                  <ul className="space-y-1">
+                    <AnimatePresence>
+                      {(moduleQuestions as (ModuleQuestion & { question: Question })[]).map((mq, i) => {
+                        const q = mq.question;
+                        const isEditing = draft?.id === q?.id;
+                        return (
+                          <motion.li
+                            key={mq.id}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 8 }}
+                            className={`group flex items-start gap-2 rounded-lg p-2 transition-colors ${
+                              isEditing ? "bg-[var(--teal)]/10" : "hover:bg-white/5"
+                            }`}
                           >
-                            <p className="truncate text-xs font-medium">
-                              {q?.prompt || (
-                                <span className="text-white/40">Untitled</span>
-                              )}
-                            </p>
-                            <p className="truncate text-[10px] text-white/40">
-                              {q?.type}
-                              {q?.body?.part ? ` · ${q.body.part}` : ""}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => setPreviewing(mqToDraft(mq))}
-                            className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                            title="Preview"
-                          >
-                            <Eye className="h-3.5 w-3.5 text-white/60 hover:text-[var(--teal)]" />
-                          </button>
-                          <button
-                            onClick={() => remove(q?.id)}
-                            className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-rose-300" />
-                          </button>
-                        </motion.li>
-                      );
-                    })}
-                  </AnimatePresence>
-                </ul>
+                            <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--teal)]/15 text-[10px] font-bold text-[var(--teal)]">
+                              {i + 1}
+                            </span>
+                            <div
+                              className="min-w-0 flex-1 cursor-pointer"
+                              onClick={() => setDraft(mqToDraft(mq))}
+                            >
+                              <p className="truncate text-xs font-medium">
+                                {q?.prompt || (
+                                  <span className="text-white/40">Untitled</span>
+                                )}
+                              </p>
+                              <p className="truncate text-[10px] text-white/40">
+                                {q?.type}
+                                {q?.body?.part ? ` · ${q.body.part}` : ""}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setPreviewing(mqToDraft(mq))}
+                              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                              title="Preview"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-white/60 hover:text-[var(--teal)]" />
+                            </button>
+                            <button
+                              onClick={() => remove(q?.id)}
+                              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-rose-300" />
+                            </button>
+                          </motion.li>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </ul>
+                )
               )}
             </div>
           </aside>
@@ -444,8 +552,40 @@ function QuestionForm({
   const needsOptions =
     /Multiple Choice|True\/False|Yes\/No|Matching/.test(draft.type) && !isSpeaking;
 
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const getUploadUrl = useServerFn(adminCreateMediaUploadUrl);
+
   function handleTypeChange(newType: string) {
     setDraft({ ...draft, type: newType, options: defaultOptionsForType(newType) });
+  }
+
+  async function handleFileSelect(
+    e: ChangeEvent<HTMLInputElement>,
+    kind: "audio" | "image",
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { signedUrl, publicUrl } = await getUploadUrl({
+        data: { filename: file.name, kind },
+      });
+      const res = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      setDraft({ ...draft, media: { kind, name: file.name, url: publicUrl } });
+      toast.success("File uploaded successfully");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   }
 
   return (
@@ -678,26 +818,51 @@ function QuestionForm({
 
           {/* Media */}
           <Field label="Media attachment">
+            {/* Hidden file inputs */}
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e, "audio")}
+            />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e, "image")}
+            />
             <div className="flex flex-wrap gap-2">
               <MediaBtn
-                icon={Music}
-                label="Audio file"
-                onClick={() =>
-                  setDraft({ ...draft, media: { kind: "audio", name: "audio.mp3" } })
-                }
+                icon={uploading && draft.media?.kind !== "image" ? Loader2 : Music}
+                label={uploading && draft.media?.kind !== "image" ? "Uploading…" : "Audio file"}
+                onClick={() => !uploading && audioInputRef.current?.click()}
                 active={draft.media?.kind === "audio"}
+                disabled={uploading}
               />
               <MediaBtn
-                icon={ImageIcon}
-                label="Image / diagram"
-                onClick={() =>
-                  setDraft({ ...draft, media: { kind: "image", name: "image.png" } })
-                }
+                icon={uploading && draft.media?.kind !== "audio" ? Loader2 : ImageIcon}
+                label={uploading && draft.media?.kind !== "audio" ? "Uploading…" : "Image / diagram"}
+                onClick={() => !uploading && imageInputRef.current?.click()}
                 active={draft.media?.kind === "image"}
+                disabled={uploading}
               />
               {draft.media && (
                 <span className="flex items-center gap-2 rounded-lg border border-[var(--teal)]/30 bg-[var(--teal)]/10 px-3 py-1.5 text-xs text-[var(--teal)]">
-                  <Upload className="h-3.5 w-3.5" /> {draft.media.name}
+                  <Upload className="h-3.5 w-3.5" />
+                  {draft.media.url ? (
+                    <a
+                      href={draft.media.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline"
+                    >
+                      {draft.media.name}
+                    </a>
+                  ) : (
+                    draft.media.name
+                  )}
                   <button
                     type="button"
                     onClick={() => setDraft({ ...draft, media: undefined })}
@@ -709,7 +874,7 @@ function QuestionForm({
               )}
             </div>
             <p className="mt-1 text-[10px] text-white/30">
-              Media references are stored as metadata. Actual file upload can be wired to storage.
+              Files are uploaded to Supabase Storage (question-media bucket). Max size: 50 MB.
             </p>
           </Field>
         </motion.div>
@@ -864,17 +1029,20 @@ function MediaBtn({
   label,
   onClick,
   active,
+  disabled,
 }: {
   icon: ElementType;
   label: string;
   onClick: () => void;
   active?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition ${
+      disabled={disabled}
+      className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-60 ${
         active
           ? "border-[var(--teal)]/40 bg-[var(--teal)]/10 text-[var(--teal)]"
           : "border-white/10 bg-white/5 hover:bg-white/10"
