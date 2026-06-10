@@ -1,5 +1,6 @@
 // Server-only admin session helpers.
-// Admin sessions are represented by an HttpOnly, Secure, HMAC-signed cookie.
+// Admin sessions are gated by a server-side password (ADMIN_PASSWORD env)
+// and represented by an HttpOnly, Secure, HMAC-signed cookie.
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -38,6 +39,29 @@ function getSecret(): string {
     );
   }
   return s;
+}
+
+function getAdminPassword(): string {
+  const p = process.env.ADMIN_PASSWORD;
+  if (!p || p.length < 8) {
+    throw new Error("ADMIN_PASSWORD is not configured (min 8 chars).");
+  }
+  return p;
+}
+
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+export async function checkAdminPassword(input: string): Promise<boolean> {
+  try {
+    return constantTimeEqual(input, getAdminPassword());
+  } catch {
+    return false;
+  }
 }
 
 export type AdminSession = { admin: true; iat: number; exp: number };

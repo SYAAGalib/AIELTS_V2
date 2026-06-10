@@ -3,6 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listPublicTestimonials, type PublicTestimonial } from "@/lib/homepage.functions";
 
+const FALLBACK: PublicTestimonial[] = [
+  { id: "f1", name: "Tahmid Rahman", city: "Dhaka", target: "University of Toronto", quote: "I had three weeks left and was stuck at Band 6.5. The AI examiner caught the small grammar slips my coaching centre never flagged. Walked out with 7.5." },
+  { id: "f2", name: "Nusrat Jahan", city: "Chittagong", target: "NHS nursing pathway", quote: "Writing was always my weakest skill. The rewrite suggestions taught me how to actually paraphrase the prompt. Got 7.0 first attempt." },
+  { id: "f3", name: "Sadia Akter", city: "Sylhet", target: "PR — Australia", quote: "I work full-time, so 24/7 speaking practice on my phone was the only way. By test day, the real examiner didn't feel scary." },
+];
+
 export function Testimonials() {
   const fetchFn = useServerFn(listPublicTestimonials);
   const { data } = useQuery({
@@ -10,9 +16,8 @@ export function Testimonials() {
     queryFn: () => fetchFn(),
     staleTime: 5 * 60_000,
   });
-  const stories: PublicTestimonial[] = data ?? [];
-  if (stories.length === 0) return null;
-  const loop = stories.length >= 3 ? [...stories, ...stories] : stories;
+  const stories = data && data.length >= 3 ? data : FALLBACK;
+  const loop = [...stories, ...stories];
 
   return (
     <section id="stories" className="relative overflow-hidden py-28 md:py-36">

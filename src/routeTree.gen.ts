@@ -41,7 +41,6 @@ import { Route as ApiSocialPreviewRouteImport } from './routes/api/social-previe
 import { Route as AdminYoutubeRouteImport } from './routes/admin.youtube'
 import { Route as AdminVocabularyRouteImport } from './routes/admin.vocabulary'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSponsorsRouteImport } from './routes/admin.sponsors'
 import { Route as AdminSpeakingAiRouteImport } from './routes/admin.speaking-ai'
@@ -54,7 +53,6 @@ import { Route as AdminModulesRouteImport } from './routes/admin.modules'
 import { Route as AdminMockTestsRouteImport } from './routes/admin.mock-tests'
 import { Route as AdminMailRouteImport } from './routes/admin.mail'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
-import { Route as AdminFaqsRouteImport } from './routes/admin.faqs'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminApiRouteImport } from './routes/admin.api'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
@@ -222,11 +220,6 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
-  id: '/testimonials',
-  path: '/testimonials',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
@@ -287,11 +280,6 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminFaqsRoute = AdminFaqsRouteImport.update({
-  id: '/faqs',
-  path: '/faqs',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminContentRoute = AdminContentRouteImport.update({
   id: '/content',
   path: '/content',
@@ -340,7 +328,6 @@ export interface FileRoutesByFullPath {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/api': typeof AdminApiRoute
   '/admin/content': typeof AdminContentRoute
-  '/admin/faqs': typeof AdminFaqsRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/mail': typeof AdminMailRoute
   '/admin/mock-tests': typeof AdminMockTestsRoute
@@ -353,7 +340,6 @@ export interface FileRoutesByFullPath {
   '/admin/speaking-ai': typeof AdminSpeakingAiRoute
   '/admin/sponsors': typeof AdminSponsorsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
-  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/vocabulary': typeof AdminVocabularyRoute
   '/admin/youtube': typeof AdminYoutubeRoute
@@ -392,7 +378,6 @@ export interface FileRoutesByTo {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/api': typeof AdminApiRoute
   '/admin/content': typeof AdminContentRoute
-  '/admin/faqs': typeof AdminFaqsRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/mail': typeof AdminMailRoute
   '/admin/mock-tests': typeof AdminMockTestsRoute
@@ -405,7 +390,6 @@ export interface FileRoutesByTo {
   '/admin/speaking-ai': typeof AdminSpeakingAiRoute
   '/admin/sponsors': typeof AdminSponsorsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
-  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/vocabulary': typeof AdminVocabularyRoute
   '/admin/youtube': typeof AdminYoutubeRoute
@@ -447,7 +431,6 @@ export interface FileRoutesById {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/api': typeof AdminApiRoute
   '/admin/content': typeof AdminContentRoute
-  '/admin/faqs': typeof AdminFaqsRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/mail': typeof AdminMailRoute
   '/admin/mock-tests': typeof AdminMockTestsRoute
@@ -460,7 +443,6 @@ export interface FileRoutesById {
   '/admin/speaking-ai': typeof AdminSpeakingAiRoute
   '/admin/sponsors': typeof AdminSponsorsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
-  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/vocabulary': typeof AdminVocabularyRoute
   '/admin/youtube': typeof AdminYoutubeRoute
@@ -503,7 +485,6 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/api'
     | '/admin/content'
-    | '/admin/faqs'
     | '/admin/live'
     | '/admin/mail'
     | '/admin/mock-tests'
@@ -516,7 +497,6 @@ export interface FileRouteTypes {
     | '/admin/speaking-ai'
     | '/admin/sponsors'
     | '/admin/subscriptions'
-    | '/admin/testimonials'
     | '/admin/users'
     | '/admin/vocabulary'
     | '/admin/youtube'
@@ -555,7 +535,6 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/api'
     | '/admin/content'
-    | '/admin/faqs'
     | '/admin/live'
     | '/admin/mail'
     | '/admin/mock-tests'
@@ -568,7 +547,6 @@ export interface FileRouteTypes {
     | '/admin/speaking-ai'
     | '/admin/sponsors'
     | '/admin/subscriptions'
-    | '/admin/testimonials'
     | '/admin/users'
     | '/admin/vocabulary'
     | '/admin/youtube'
@@ -609,7 +587,6 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/api'
     | '/admin/content'
-    | '/admin/faqs'
     | '/admin/live'
     | '/admin/mail'
     | '/admin/mock-tests'
@@ -622,7 +599,6 @@ export interface FileRouteTypes {
     | '/admin/speaking-ai'
     | '/admin/sponsors'
     | '/admin/subscriptions'
-    | '/admin/testimonials'
     | '/admin/users'
     | '/admin/vocabulary'
     | '/admin/youtube'
@@ -895,13 +871,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/testimonials': {
-      id: '/admin/testimonials'
-      path: '/testimonials'
-      fullPath: '/admin/testimonials'
-      preLoaderRoute: typeof AdminTestimonialsRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/subscriptions': {
       id: '/admin/subscriptions'
       path: '/subscriptions'
@@ -986,13 +955,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLiveRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/faqs': {
-      id: '/admin/faqs'
-      path: '/faqs'
-      fullPath: '/admin/faqs'
-      preLoaderRoute: typeof AdminFaqsRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/content': {
       id: '/admin/content'
       path: '/content'
@@ -1042,7 +1004,6 @@ interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminApiRoute: typeof AdminApiRoute
   AdminContentRoute: typeof AdminContentRoute
-  AdminFaqsRoute: typeof AdminFaqsRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminMailRoute: typeof AdminMailRoute
   AdminMockTestsRoute: typeof AdminMockTestsRoute
@@ -1055,7 +1016,6 @@ interface AdminRouteChildren {
   AdminSpeakingAiRoute: typeof AdminSpeakingAiRoute
   AdminSponsorsRoute: typeof AdminSponsorsRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
-  AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminVocabularyRoute: typeof AdminVocabularyRoute
   AdminYoutubeRoute: typeof AdminYoutubeRoute
@@ -1066,7 +1026,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
   AdminApiRoute: AdminApiRoute,
   AdminContentRoute: AdminContentRoute,
-  AdminFaqsRoute: AdminFaqsRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminMailRoute: AdminMailRoute,
   AdminMockTestsRoute: AdminMockTestsRoute,
@@ -1079,7 +1038,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSpeakingAiRoute: AdminSpeakingAiRoute,
   AdminSponsorsRoute: AdminSponsorsRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
-  AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminVocabularyRoute: AdminVocabularyRoute,
   AdminYoutubeRoute: AdminYoutubeRoute,
@@ -1148,13 +1106,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

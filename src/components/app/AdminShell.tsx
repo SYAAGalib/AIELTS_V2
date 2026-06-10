@@ -2,7 +2,7 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, FileBarChart, Users, ShieldCheck, FileText, KeyRound,
-  Bell, Sparkles, Mail, Settings, GraduationCap, Menu, X, Search, Layers, HelpCircle, Bot, ClipboardCheck, Library, Radio, CreditCard, Youtube, Heart, MessageSquareQuote,
+  Bell, Sparkles, Mail, Settings, GraduationCap, Menu, X, Search, Layers, HelpCircle, Bot, ClipboardCheck, Library, Radio, CreditCard, Youtube, Heart,
 } from "lucide-react";
 import { useEffect, useState, type ComponentType } from "react";
 import { BottomNav, type BottomNavItem } from "@/components/app/BottomNav";
@@ -30,8 +30,6 @@ export const adminNav: NavItem[] = [
   { to: "/admin/live", label: "Live System", icon: Radio },
   { to: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { to: "/admin/content", label: "Content", icon: FileText },
-  { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
-  { to: "/admin/faqs", label: "FAQs", icon: HelpCircle },
   { to: "/admin/sponsors", label: "Sponsors", icon: Heart },
   { to: "/admin/youtube", label: "YouTube Sync", icon: Youtube },
   { to: "/admin/api", label: "API Settings", icon: KeyRound },
@@ -41,7 +39,11 @@ export const adminNav: NavItem[] = [
   { to: "/admin/settings", label: "General Settings", icon: Settings },
 ];
 
-const alerts: { t: string; d: string; k: "alert" | "warn" | "info" }[] = [];
+const alerts = [
+  { t: "Churn risk: 24 Pro users", d: "Predicted in next 7 days", k: "alert" },
+  { t: "New content review queue", d: "12 lessons awaiting approval", k: "info" },
+  { t: "Payment gateway latency", d: "Stripe webhook delayed 4s", k: "warn" },
+];
 
 export function AdminShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -192,22 +194,18 @@ function BellDropdown({ onClose }: { onClose: () => void }) {
         className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-white/10 bg-[#0B1224] p-2 shadow-2xl shadow-black/40"
       >
         <p className="px-3 py-2 text-xs uppercase tracking-wider text-white/40">Alerts</p>
-        {alerts.length === 0 ? (
-          <p className="px-3 py-3 text-sm text-white/50">No alerts.</p>
-        ) : (
-          <ul className="space-y-1">
-            {alerts.map((a, i) => (
-              <motion.li key={a.t} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
-                className="flex items-start gap-3 rounded-lg p-3 hover:bg-white/5">
-                <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${a.k === "alert" ? "bg-red-400" : a.k === "warn" ? "bg-amber-400" : "bg-[var(--teal)]"} animate-pulse`} />
-                <div className="text-sm">
-                  <p className="font-medium">{a.t}</p>
-                  <p className="text-xs text-white/50">{a.d}</p>
-                </div>
-              </motion.li>
-            ))}
-          </ul>
-        )}
+        <ul className="space-y-1">
+          {alerts.map((a, i) => (
+            <motion.li key={a.t} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
+              className="flex items-start gap-3 rounded-lg p-3 hover:bg-white/5">
+              <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${a.k === "alert" ? "bg-red-400" : a.k === "warn" ? "bg-amber-400" : "bg-[var(--teal)]"} animate-pulse`} />
+              <div className="text-sm">
+                <p className="font-medium">{a.t}</p>
+                <p className="text-xs text-white/50">{a.d}</p>
+              </div>
+            </motion.li>
+          ))}
+        </ul>
       </motion.div>
     </>
   );

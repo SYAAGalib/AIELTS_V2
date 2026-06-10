@@ -8,7 +8,10 @@ export const Route = createFileRoute("/admin-login")({
     redirect: typeof s.redirect === "string" ? s.redirect : "/admin",
   }),
   head: () => ({
-    meta: [{ title: "Admin Login — AIELTS" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "Admin Login — AIELTS" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: AdminLoginPage,
 });
@@ -17,8 +20,8 @@ function AdminLoginPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const login = useServerFn(adminLogin);
-  const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_DEMO_EMAIL ?? "");
-  const [password, setPassword] = useState("");
+  const devPassword = import.meta.env.DEV ? "Galib00.00" : "";
+  const [password, setPassword] = useState(devPassword);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,7 +30,7 @@ function AdminLoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login({ data: { email, password } });
+      await login({ data: { password } });
       navigate({ to: search.redirect || "/admin" });
     } catch {
       setError("Invalid credentials.");
@@ -44,17 +47,8 @@ function AdminLoginPage() {
       >
         <h1 className="font-display text-xl font-semibold">Admin sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          This area is restricted. Sign in with the admin email and password to continue.
+          This area is restricted. Enter the admin password to continue.
         </p>
-        <label className="mt-5 block text-sm font-medium">Email</label>
-        <input
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-        />
         <label className="mt-5 block text-sm font-medium">Password</label>
         <input
           type="password"
@@ -69,9 +63,14 @@ function AdminLoginPage() {
             {error}
           </p>
         )}
+        {import.meta.env.DEV && (
+          <p className="mt-3 rounded-md border border-dashed bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground">
+            Dev only — password prefilled: <code className="font-mono">Galib00.00</code>
+          </p>
+        )}
         <button
           type="submit"
-          disabled={submitting || !email || !password}
+          disabled={submitting || !password}
           className="mt-5 w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
         >
           {submitting ? "Signing in…" : "Sign in"}

@@ -722,48 +722,6 @@ export type Database = {
         }
         Relationships: []
       }
-      module_questions: {
-        Row: {
-          created_at: string
-          id: string
-          module_id: string
-          position: number
-          question_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          module_id: string
-          position?: number
-          question_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          module_id?: string
-          position?: number
-          question_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "module_questions_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "modules"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "module_questions_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           body: string | null

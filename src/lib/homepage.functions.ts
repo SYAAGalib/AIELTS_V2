@@ -26,20 +26,26 @@ function extractYouTubeId(url: string): string | null {
 export const listPublicTestimonials = createServerFn({ method: "GET" }).handler(
   async (): Promise<PublicTestimonial[]> => {
     const { data, error } = await supabaseAdmin
-      .from("testimonials")
-      .select("id,name,city,target,quote")
-      .eq("published", true)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(48);
+      .from("content")
+      .select("id,title,body")
+      .eq("category", "testimonial")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(24);
     if (error) throw new Error(error.message);
-    return (data ?? []).map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      city: row.city ?? "",
-      target: row.target ?? "",
-      quote: row.quote,
-    }));
+    return (data ?? [])
+      .map((row: any) => {
+        const body = (row.body ?? {}) as { city?: string; target?: string; quote?: string };
+        if (!body.quote) return null;
+        return {
+          id: row.id,
+          name: row.title,
+          city: body.city ?? "",
+          target: body.target ?? "",
+          quote: body.quote,
+        };
+      })
+      .filter((x: PublicTestimonial | null): x is PublicTestimonial => x !== null);
   },
 );
 
@@ -161,7 +167,7 @@ export const getPublicStats = createServerFn({ method: "GET" }).handler(
   async (): Promise<PublicStats> => {
     const [v, t, m, l] = await Promise.all([
       supabaseAdmin.from("videos").select("id", { count: "exact", head: true }).eq("status", "published"),
-      supabaseAdmin.from("testimonials").select("id", { count: "exact", head: true }).eq("published", true),
+      supabaseAdmin.from("content").select("id", { count: "exact", head: true }).eq("category", "testimonial").eq("status", "published"),
       supabaseAdmin.from("modules").select("id", { count: "exact", head: true }).eq("status", "published"),
       supabaseAdmin.from("live_sessions").select("id", { count: "exact", head: true }).eq("status", "published"),
     ]);

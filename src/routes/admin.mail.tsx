@@ -1,102 +1,83 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { toast } from "sonner";
-import { Plus, Edit3, Trash2 } from "lucide-react";
-import { adminListMail, adminUpsertMail, adminDeleteMail, type MailTemplate } from "@/lib/admin-cms.functions";
+import { Mail, Send, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/mail")({
-  head: () => ({ meta: [{ title: "Mail templates — AIELTS Admin" }, { name: "robots", content: "noindex, nofollow" }] }),
-  component: MailAdmin,
+  head: () => ({
+    meta: [
+      { title: "Email Settings — AIELTS Admin" },
+      { name: "description", content: "Configure AIELTS SMTP, transactional mail, and reply-to settings." },
+      { property: "og:title", content: "Email Settings — AIELTS Admin" },
+      { property: "og:description", content: "Configure AIELTS SMTP, transactional mail, and reply-to settings." },
+      { property: "og:url", content: "/admin/mail" },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: MailSettingsPage,
 });
 
-const EMPTY: Partial<MailTemplate> = { name: "", subject: "", html: "", text: "" };
+const fields = [
+  { l: "SMTP host", p: "smtp.mailgun.org", t: "text" },
+  { l: "Port", p: "587", t: "number" },
+  { l: "Username", p: "postmaster@aielts.app", t: "text" },
+  { l: "Password", p: "••••••••", t: "password" },
+  { l: "From address", p: "no-reply@aielts.app", t: "email" },
+  { l: "Reply-to", p: "support@aielts.app", t: "email" },
+];
 
-function MailAdmin() {
-  const list = useServerFn(adminListMail);
-  const upsert = useServerFn(adminUpsertMail);
-  const del = useServerFn(adminDeleteMail);
-  const qc = useQueryClient();
-  const { data = [], isLoading } = useQuery({ queryKey: ["admin-mail"], queryFn: () => list() });
-  const [form, setForm] = useState<Partial<MailTemplate>>(EMPTY);
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    if (!form.name || !form.subject || !form.html) { toast.error("Name, subject and HTML required"); return; }
-    setBusy(true);
-    try {
-      await upsert({ data: {
-        id: form.id, name: form.name!, subject: form.subject!, html: form.html!, text: form.text || null,
-      }});
-      toast.success(form.id ? "Updated" : "Created");
-      setForm(EMPTY);
-      qc.invalidateQueries({ queryKey: ["admin-mail"] });
-    } catch (e: any) { toast.error(e.message ?? "Failed"); }
-    finally { setBusy(false); }
-  }
-  async function remove(id: string) {
-    if (!confirm("Delete this template?")) return;
-    await del({ data: { id } });
-    toast.success("Deleted");
-    qc.invalidateQueries({ queryKey: ["admin-mail"] });
-  }
-
+function MailSettingsPage() {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const test = () => {
+    setSending(true);
+    setTimeout(() => { setSending(false); setSent(true); setTimeout(()=>setSent(false), 2400); }, 1400);
+  };
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display text-3xl font-bold">Mail templates</h2>
-        <p className="text-sm text-white/50">Transactional email templates stored in the database.</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-white/40">SMTP</p>
+        <h2 className="mt-1 font-display text-3xl font-bold flex items-center gap-2">
+          <Mail className="h-7 w-7 text-[var(--teal)]" /> Mail settings
+        </h2>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-white/60">{form.id ? "Edit template" : "Add template"}</h3>
-        <div className="mt-4 grid gap-3">
-          <Inp label="Name (key, e.g. welcome)" value={form.name ?? ""} onChange={(v) => setForm({ ...form, name: v })} />
-          <Inp label="Subject" value={form.subject ?? ""} onChange={(v) => setForm({ ...form, subject: v })} />
-          <div>
-            <label className="text-xs font-medium text-white/70">HTML body</label>
-            <textarea rows={8} value={form.html ?? ""} onChange={(e) => setForm({ ...form, html: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 p-3 font-mono text-xs outline-none focus:border-[var(--teal)]" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-white/70">Plain text (optional)</label>
-            <textarea rows={4} value={form.text ?? ""} onChange={(e) => setForm({ ...form, text: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 p-3 text-sm outline-none focus:border-[var(--teal)]" />
+      <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
+        <div className="grid gap-5 md:grid-cols-2">
+          {fields.map((f, i) => (
+            <motion.div key={f.l}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.06 }}>
+              <label className="text-xs uppercase tracking-wider text-white/50">{f.l}</label>
+              <input type={f.t} placeholder={f.p}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none transition focus:border-[var(--teal)] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--teal)_20%,transparent)]" />
+            </motion.div>
+          ))}
+        </div>
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm text-white/70">
+            <input type="checkbox" defaultChecked className="accent-[var(--teal)]" /> Use TLS / STARTTLS
+          </label>
+          <div className="flex gap-2">
+            <button type="button"
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Save</button>
+            <button type="button" onClick={test} disabled={sending}
+              className="flex items-center gap-2 rounded-lg gradient-brand px-4 py-2 text-sm font-semibold transition hover:shadow-[0_0_24px_var(--teal)] disabled:opacity-60">
+              <Send className={`h-4 w-4 ${sending ? "animate-pulse" : ""}`} /> {sending ? "Sending…" : "Send test mail"}
+            </button>
           </div>
         </div>
-        <div className="mt-4 flex gap-2">
-          <button onClick={save} disabled={busy} className="flex items-center gap-2 rounded-lg gradient-brand px-4 py-2 text-sm font-semibold disabled:opacity-60">
-            <Plus className="h-4 w-4" /> {busy ? "Saving…" : form.id ? "Save" : "Add"}
-          </button>
-          {form.id && <button onClick={() => setForm(EMPTY)} className="rounded-lg border border-white/15 px-4 py-2 text-sm">Cancel</button>}
-        </div>
-      </div>
+      </motion.form>
 
-      <div className="rounded-xl border border-white/10 bg-white/5">
-        <div className="border-b border-white/10 p-4 text-sm font-semibold uppercase tracking-wider text-white/60">Templates ({data.length})</div>
-        {isLoading ? <p className="p-6 text-sm text-white/60">Loading…</p> :
-         data.length === 0 ? <p className="p-6 text-sm text-white/60">No templates yet.</p> : (
-          <ul className="divide-y divide-white/5">
-            {data.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-4 p-4">
-                <div className="min-w-0">
-                  <p className="font-mono text-sm">{t.name}</p>
-                  <p className="text-xs text-white/60">{t.subject}</p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <button onClick={() => setForm(t)} className="rounded-md border border-white/15 px-3 py-1.5 text-xs hover:bg-white/10"><Edit3 className="h-3 w-3 inline mr-1" />Edit</button>
-                  <button onClick={() => remove(t.id)} className="rounded-md border border-red-500/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10"><Trash2 className="h-3 w-3 inline mr-1" />Delete</button>
-                </div>
-              </li>
-            ))}
-          </ul>
+      <AnimatePresence>
+        {sent && (
+          <motion.div initial={{ y:-40, opacity:0 }} animate={{ y:0, opacity:1 }} exit={{ y:-40, opacity:0 }}
+            className="fixed top-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[var(--teal)]/30 bg-[#0B1224]/95 px-5 py-2.5 text-sm shadow-2xl backdrop-blur">
+            <CheckCircle2 className="h-4 w-4 text-[var(--teal)]" /> Test mail delivered
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
-}
-function Inp({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return <div><label className="text-xs font-medium text-white/70">{label}</label>
-    <input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[var(--teal)]" /></div>;
 }

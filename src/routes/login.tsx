@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { seedDemoAccount } from "@/lib/auth.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -21,6 +23,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { redirect } = Route.useSearch();
   const navigate = useNavigate();
+  const seed = useServerFn(seedDemoAccount);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,7 +57,12 @@ function LoginPage() {
     setError(null);
     setBusy(true);
     try {
-      const r = await trySignIn(email, password);
+      let r = await trySignIn(email, password);
+      // If demo creds fail (e.g. first run), seed and retry once.
+      if (!r.ok && (email === "demo-user@aielts.org" || email === "demo-admin@aielts.org")) {
+        await seed({ data: { kind: email === "demo-admin@aielts.org" ? "admin" : "user" } });
+        r = await trySignIn(email, password);
+      }
       if (!r.ok) {
         setError(r.err || "Sign in failed.");
         return;
@@ -81,6 +89,16 @@ function LoginPage() {
     navigate({ to: redirect });
   }
 
+  function autofill(kind: "user" | "admin") {
+    if (kind === "user") {
+      setEmail("demo-user@aielts.org");
+      setPassword("Demo1234!");
+    } else {
+      setEmail("demo-admin@aielts.org");
+      setPassword("Demo1234!");
+    }
+    setError(null);
+  }
 
   return (
     <div className="grid min-h-screen place-items-center bg-background p-4">
@@ -150,6 +168,26 @@ function LoginPage() {
           </button>
         </form>
 
+        <div className="mt-5 rounded-lg border border-dashed bg-muted/40 p-3">
+          <p className="text-xs font-semibold text-muted-foreground">Demo accounts</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button" onClick={() => autofill("user")}
+              className="rounded-md bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent border"
+            >
+              Autofill Student
+            </button>
+            <button
+              type="button" onClick={() => autofill("admin")}
+              className="rounded-md bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent border"
+            >
+              Autofill Admin
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Password: <code className="font-mono">Demo1234!</code>
+          </p>
+        </div>
 
         <p className="mt-5 text-center text-sm text-muted-foreground">
           New here?{" "}

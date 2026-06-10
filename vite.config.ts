@@ -11,11 +11,6 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  // When NITRO_PRESET is set (e.g. in Docker), pass it explicitly so it
-  // overrides the Lovable defaultPreset ("cloudflare-module").
-  ...(process.env.NITRO_PRESET
-    ? { nitro: { preset: process.env.NITRO_PRESET as "node-server" } }
-    : {}),
   vite: {
     plugins: [
       VitePWA({
